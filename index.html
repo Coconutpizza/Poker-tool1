@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Multi-Player Analyst</title>
+    <title>Poker Assistant V4</title>
     <style>
         :root {
             --bg: #0f172a;
@@ -13,7 +13,7 @@
             --red: #ef4444;
             --text: #f8fafc;
             --gold: #f59e0b;
-            --active-border: #3b82f6;
+            --gray: #64748b;
         }
         body {
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -28,10 +28,10 @@
             -webkit-user-select: none;
         }
 
-        /* TABS */
+        /* NAV */
         nav { display: flex; height: 50px; border-bottom: 1px solid #334155; background: #020617; flex-shrink: 0; }
         nav button {
-            flex: 1; background: none; border: none; color: #64748b;
+            flex: 1; background: none; border: none; color: var(--gray);
             font-size: 1rem; font-weight: 700; font-family: sans-serif;
         }
         nav button.active { color: white; border-bottom: 3px solid var(--blue); }
@@ -40,38 +40,32 @@
         .view { display: none; flex: 1; flex-direction: column; padding: 10px; overflow-y: auto; }
         .view.active { display: flex; }
 
-        /* POKER LIST LAYOUT */
+        /* BOARD */
         .board-section {
             display: flex; align-items: center; justify-content: center;
             background: #1e293b; padding: 10px; border-radius: 12px;
-            margin-bottom: 10px; border: 1px solid #334155;
-            flex-shrink: 0;
-        }
-        .player-list {
-            flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
-            padding-bottom: 10px;
-        }
-        
-        /* PLAYER ROW */
-        .p-row {
-            display: flex; align-items: center; justify-content: space-between;
-            background: #1e293b; padding: 8px 12px; border-radius: 10px;
-            border: 2px solid transparent;
-            transition: all 0.1s;
-        }
-        .p-row.active { border-color: var(--active-border); background: #252f45; }
-        
-        .p-info { display: flex; flex-direction: column; }
-        .p-label { font-size: 0.8rem; font-weight: bold; color: #94a3b8; }
-        .p-win { font-size: 1.4rem; font-weight: 800; color: var(--text); }
-        .p-cards { display: flex; gap: 4px; }
-        
-        .btn-control {
-            background: #334155; color: white; border: none; padding: 5px 10px;
-            border-radius: 6px; font-weight: bold; font-size: 0.8rem; margin-top: 5px;
+            margin-bottom: 10px; border: 1px solid #334155; flex-shrink: 0;
         }
 
+        /* PLAYER LIST */
+        .player-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-bottom: 10px; }
+        
+        .p-row {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #1e293b; padding: 8px 10px; border-radius: 10px;
+            border: 2px solid transparent; position: relative;
+        }
+        .p-row.active { border-color: var(--blue); background: #252f45; }
+        .p-row.winner { border-color: var(--gold); background: #2e2a1e; box-shadow: 0 0 10px rgba(245, 158, 11, 0.2); }
+        .p-row.folded { opacity: 0.5; filter: grayscale(1); border-color: #333; }
+
+        .p-info { display: flex; flex-direction: column; min-width: 60px; }
+        .p-name { font-size: 0.8rem; font-weight: bold; color: var(--gray); }
+        .p-win { font-size: 1.3rem; font-weight: 800; }
+        .p-desc { font-size: 0.7rem; color: var(--gold); font-weight: normal; margin-top: 2px; height: 12px;}
+
         /* CARDS */
+        .card-group { display: flex; gap: 4px; align-items: center; }
         .card-slot {
             width: 34px; height: 48px;
             background: #0f172a; border-radius: 4px;
@@ -82,25 +76,36 @@
         .card-slot.red { color: var(--red); background: #f1f5f9; border: none; }
         .card-slot.black { color: black; background: #f1f5f9; border: none; }
 
-        /* KEYBOARD (Fixed at bottom) */
+        /* CONTROLS */
+        .btn-fold {
+            background: #334155; color: #cbd5e1; border: none; border-radius: 4px;
+            font-size: 0.7rem; font-weight: bold; padding: 15px 8px; margin-left: 8px;
+        }
+        .btn-fold.is-folded { background: var(--red); color: white; }
+
+        .top-controls { display: flex; gap: 10px; margin-bottom: 5px; justify-content: center; }
+        .ctl-btn {
+            background: #334155; color: white; border: none; padding: 8px 12px;
+            border-radius: 6px; font-weight: bold; font-size: 0.8rem;
+        }
+        .btn-match { background: var(--gold); color: black; width: 100%; padding: 12px; margin-top: 5px; display: none; }
+
+        /* KEYBOARD */
         .kb-container { margin-top: auto; flex-shrink: 0; padding-top: 5px; }
         .kb { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
         .key {
             background: #334155; color: white;
             border: none; border-radius: 8px; padding: 12px 0;
             font-size: 1.2rem; font-weight: bold;
-            touch-action: manipulation;
         }
-        .key:active { background: #475569; }
-        .key-cancel { background: #1e1e1e; color: #ef4444; }
-
-        /* BLACKJACK STYLES */
-        .bj-stat-box { background: var(--panel); padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 10px; }
-        .bj-val-lg { font-size: 2.5rem; font-weight: 800; }
-        .bj-mode-bar { display: flex; gap: 5px; margin-bottom: 10px; }
-        .bj-tog { flex: 1; padding: 10px; background: #334155; border-radius: 6px; text-align: center; font-size: 0.8rem; font-weight: bold; }
+        .key-cancel { background: #1e1e1e; color: var(--red); }
+        
+        /* BLACKJACK */
+        .bj-box { background: var(--panel); padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 10px; }
+        .bj-big { font-size: 2.5rem; font-weight: 800; }
+        .bj-togs { display: flex; gap: 5px; margin-bottom: 10px; }
+        .bj-tog { flex: 1; padding: 10px; background: #334155; border-radius: 6px; text-align: center; font-weight: bold; font-size: 0.8rem; }
         .bj-tog.selected { background: var(--blue); color: white; }
-
     </style>
 </head>
 <body>
@@ -113,20 +118,17 @@
 <div id="v-poker" class="view active">
     
     <div class="board-section" id="row-board" onclick="selSeat(-1)">
-        <div style="margin-right:10px; font-size:0.8rem; color:#94a3b8; font-weight:bold;">BOARD</div>
-        <div id="h-board" style="display:flex; gap:5px;">
-            <div class="card-slot" style="opacity:0.3"></div>
-            <div class="card-slot" style="opacity:0.3"></div>
-            <div class="card-slot" style="opacity:0.3"></div>
-        </div>
+        <div style="margin-right:10px; font-size:0.8rem; color:var(--gray); font-weight:bold;">BOARD</div>
+        <div id="h-board" style="display:flex; gap:5px;"></div>
     </div>
 
-    <div id="player-list" class="player-list">
-        </div>
+    <div id="player-list" class="player-list"></div>
 
-    <div style="display:flex; gap:10px; justify-content:center; margin-bottom:5px;">
-        <button class="btn-control" onclick="addPlayer()">+ ADD PLAYER</button>
-        <button class="btn-control" style="color:#ef4444" onclick="resetPoker()">RESET ALL</button>
+    <button id="btn-match" class="ctl-btn btn-match" onclick="checkWinner()">🏆 WHO WON?</button>
+
+    <div class="top-controls" style="margin-top:5px">
+        <button class="ctl-btn" onclick="addPlayer()">+ PLAYER</button>
+        <button class="ctl-btn" style="color:var(--red); background:#1e1e1e" onclick="resetPoker()">RESET</button>
     </div>
 
     <div class="kb-container">
@@ -144,7 +146,7 @@
             <button class="key" onclick="pkIn('4')">4</button>
             <button class="key" onclick="pkIn('3')">3</button>
             <button class="key" onclick="pkIn('2')">2</button>
-            <button class="key key-cancel" style="grid-column: span 3" onclick="pkClearRow()">CLEAR SELECTION</button>
+            <button class="key key-cancel" style="grid-column: span 3" onclick="pkClearRow()">CLEAR SELECTED</button>
         </div>
 
         <div id="kb-suit" class="kb" style="display:none;">
@@ -158,20 +160,20 @@
 </div>
 
 <div id="v-bj" class="view">
-    <div class="bj-stat-box">
-        <div style="font-size:0.8rem; color:#94a3b8;">TRUE COUNT</div>
-        <div id="bj-true" class="bj-val-lg">0.0</div>
+    <div class="bj-box">
+        <div style="font-size:0.8rem; color:var(--gray);">TRUE COUNT</div>
+        <div id="bj-true" class="bj-big">0.0</div>
         <div style="font-size:1.2rem; color:var(--gold); font-weight:bold; margin-top:5px;">BET: <span id="bj-bet">1u</span></div>
-        <div style="font-size:0.8rem; color:#64748b; margin-top:10px;">Run: <span id="bj-run" style="color:white">0</span> | Decks: <span id="bj-decks" style="color:white">6.0</span></div>
+        <div style="font-size:0.8rem; color:var(--gray); margin-top:10px;">Run: <span id="bj-run" style="color:white">0</span> | Decks: <span id="bj-decks" style="color:white">6.0</span></div>
     </div>
 
-    <div class="bj-mode-bar">
+    <div class="bj-togs">
         <div id="bm-count" class="bj-tog selected" onclick="setBjMode('count')">COUNT</div>
         <div id="bm-deal" class="bj-tog" onclick="setBjMode('deal')">SET DLR</div>
         <div id="bm-play" class="bj-tog" onclick="setBjMode('play')">SET ME</div>
     </div>
 
-    <div style="text-align:center; margin-bottom:15px; color:#94a3b8;">
+    <div style="text-align:center; margin-bottom:15px; color:var(--gray);">
         DLR: <span id="dsp-d" style="color:white; font-weight:bold; font-size:1.2rem; margin-right:15px;">?</span>
         ME: <span id="dsp-p" style="color:white; font-weight:bold; font-size:1.2rem;">0</span>
     </div>
@@ -196,7 +198,7 @@
 </div>
 
 <script>
-    // --- APP NAVIGATION ---
+    // --- NAV ---
     function setTab(t) {
         document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));
         document.getElementById('v-'+t).classList.add('active');
@@ -204,76 +206,93 @@
         document.getElementById('n-'+t).classList.add('active');
     }
 
-    // --- POKER ENGINE ---
+    // --- POKER LOGIC ---
     let pk = {
-        seats: [{id:0, name:"ME", cards:[], win:0}], // 0 is ME
-        board: [],
-        sel: 0, // 0=Me, 1+=Opponents, -1=Board
-        temp: null
+        seats: [{id:0, name:"ME", cards:[], win:0, folded:false, handName:""}], 
+        board: [], sel: 0, temp: null, winnerIdx: -1
     };
 
     function initPoker() { renderSeats(); }
 
     function addPlayer() {
         if(pk.seats.length >= 6) return;
-        pk.seats.push({id: pk.seats.length, name: "P"+(pk.seats.length+1), cards:[], win:0});
-        renderSeats();
-        runSim();
+        pk.seats.push({id: pk.seats.length, name: "P"+(pk.seats.length+1), cards:[], win:0, folded:false, handName:""});
+        renderSeats(); runSim();
     }
 
-    function removePlayer(idx) {
-        if(idx === 0) return; // Can't remove ME
-        pk.seats.splice(idx, 1);
-        // Fix names/ids
-        pk.seats.forEach((s, i) => { s.id = i; if(i>0) s.name = "P"+(i+1); });
-        pk.sel = 0; // Reset selection
-        renderSeats();
-        runSim();
+    function selSeat(idx) { pk.sel = idx; renderSeats(); }
+    
+    function toggleFold(e, idx) {
+        e.stopPropagation();
+        pk.seats[idx].folded = !pk.seats[idx].folded;
+        pk.seats[idx].win = 0;
+        pk.seats[idx].handName = pk.seats[idx].folded ? "Folded" : "";
+        runSim(); renderSeats();
     }
 
-    function selSeat(idx) {
-        pk.sel = idx;
+    function checkWinner() {
+        // Find best score among non-folded players
+        let bestScore = -1;
+        let winners = [];
+        
+        pk.seats.forEach((s, i) => {
+            if(s.folded || s.cards.length < 2) return;
+            let score = evalScore(s.cards, pk.board);
+            if(score > bestScore) { bestScore = score; winners = [i]; }
+            else if(score === bestScore) { winners.push(i); }
+        });
+
+        pk.winnerIdx = winners.length > 0 ? winners[0] : -1; // Just highlight first winner for simplicity
+        
+        // Update descriptions
+        pk.seats.forEach(s => {
+            if(s.cards.length >= 2 && !s.folded) s.handName = getHandName(evalScore(s.cards, pk.board));
+        });
+        
         renderSeats();
     }
 
     function pkClearRow() {
         if(pk.sel === -1) pk.board = [];
         else pk.seats[pk.sel].cards = [];
-        renderSeats();
-        runSim();
+        pk.winnerIdx = -1;
+        runSim(); renderSeats();
     }
 
     function renderSeats() {
-        // Board
+        // Render Board
         let bHTML = pk.board.map(c=>drawCard(c)).join('');
         for(let i=pk.board.length; i<5; i++) bHTML += `<div class="card-slot" style="opacity:0.2"></div>`;
         document.getElementById('h-board').innerHTML = bHTML;
-        let bRow = document.getElementById('row-board');
-        bRow.style.borderColor = (pk.sel === -1) ? 'var(--blue)' : '#334155';
+        document.getElementById('row-board').style.borderColor = (pk.sel === -1) ? 'var(--blue)' : '#334155';
 
-        // Seats
+        // Render Match Button
+        document.getElementById('btn-match').style.display = pk.board.length === 5 ? 'block' : 'none';
+
+        // Render List
         let list = document.getElementById('player-list');
         list.innerHTML = "";
         
         pk.seats.forEach((s, i) => {
             let active = (pk.sel === i) ? 'active' : '';
-            let cardsHTML = s.cards.map(c=>drawCard(c)).join('');
-            
-            // Fill empty slots
-            if(s.cards.length < 2) cardsHTML += `<div class="card-slot" style="opacity:0.2; border-style:dashed;">?</div>`;
-            if(s.cards.length < 1) cardsHTML += `<div class="card-slot" style="opacity:0.2; border-style:dashed;">?</div>`;
+            let foldClass = s.folded ? 'folded' : '';
+            let winClass = (pk.winnerIdx === i) ? 'winner' : '';
+            let foldBtnText = s.folded ? 'UNFOLD' : 'FOLD';
+            let foldBtnCls = s.folded ? 'is-folded' : '';
 
-            let removeBtn = i > 0 ? `<div style="font-size:1.5rem; color:#64748b; padding:0 10px;" onclick="event.stopPropagation(); removePlayer(${i})">×</div>` : '';
+            let cardsHTML = s.cards.map(c=>drawCard(c)).join('');
+            if(s.cards.length < 2) cardsHTML += `<div class="card-slot" style="opacity:0.2; border-style:dashed;">?</div>`;
 
             let html = `
-            <div class="p-row ${active}" onclick="selSeat(${i})">
+            <div class="p-row ${active} ${foldClass} ${winClass}" onclick="selSeat(${i})">
                 <div class="p-info">
-                    <div class="p-label">${s.name}</div>
-                    <div class="p-win" style="color:${getWinColor(s.win)}">${s.win}%</div>
+                    <div class="p-name">${s.name}</div>
+                    <div class="p-win" style="color:${getWinColor(s.win, s.folded)}">${s.folded?'-':s.win+'%'}</div>
+                    <div class="p-desc">${s.handName}</div>
                 </div>
                 <div style="display:flex; align-items:center">
-                    <div class="p-cards">${cardsHTML}</div>
-                    ${removeBtn}
+                    <div class="card-group">${cardsHTML}</div>
+                    <button class="btn-fold ${foldBtnCls}" onclick="toggleFold(event, ${i})">${foldBtnText}</button>
                 </div>
             </div>`;
             list.innerHTML += html;
@@ -285,18 +304,17 @@
         let color = (c.s === 'h' || c.s === 'd') ? 'red' : 'black';
         return `<div class="card-slot ${color}">${c.r}${suit}</div>`;
     }
-
-    function getWinColor(n) {
-        if(n > 50) return 'var(--green)';
+    
+    function getWinColor(n, folded) {
+        if(folded) return '#64748b';
+        if(n > 60) return 'var(--green)';
         if(n < 20) return 'var(--red)';
         return 'white';
     }
 
-    // INPUT HANDLERS
     function pkIn(r) {
         if(pk.sel === -1 && pk.board.length >= 5) return;
         if(pk.sel >= 0 && pk.seats[pk.sel].cards.length >= 2) return;
-        
         pk.temp = r;
         document.getElementById('kb-rank').style.display = 'none';
         document.getElementById('kb-suit').style.display = 'grid';
@@ -310,36 +328,35 @@
 
     function pkSuit(s) {
         let c = {r: pk.temp, s: s};
+        pk.winnerIdx = -1; // Reset winner on change
         if(pk.sel === -1) pk.board.push(c);
         else pk.seats[pk.sel].cards.push(c);
         
         pkBack();
-        renderSeats();
-        runSim();
+        runSim(); renderSeats();
     }
     
     function resetPoker() {
-        pk.seats = [{id:0, name:"ME", cards:[], win:0}];
-        pk.board = [];
-        pk.sel = 0;
+        pk.seats = [{id:0, name:"ME", cards:[], win:0, folded:false, handName:""}];
+        pk.board = []; pk.sel = 0; pk.winnerIdx = -1;
         renderSeats();
     }
 
-    // MULTI-PLAYER MONTE CARLO
+    // SIMULATION
     function runSim() {
-        // Only run if we have cards
-        let hasCards = pk.seats.some(s => s.cards.length > 0);
-        if(!hasCards) {
-            pk.seats.forEach(s => s.win = 0);
-            renderSeats();
-            return;
-        }
+        // Calculate current hands for UI
+        pk.seats.forEach(s => {
+            if(!s.folded && s.cards.length > 0) s.handName = getHandName(evalScore(s.cards, pk.board));
+        });
+
+        // Don't sim if everyone folded or no cards
+        let active = pk.seats.filter(s => !s.folded);
+        if(active.length < 1 || !active.some(s=>s.cards.length>0)) return;
 
         setTimeout(() => {
             let deck = buildDeck();
-            // Remove known cards
             let known = [...pk.board];
-            pk.seats.forEach(s => known.push(...s.cards));
+            active.forEach(s => known.push(...s.cards));
             deck = deck.filter(d => !known.some(k => k.r==d.r && k.s==d.s));
 
             let wins = new Array(pk.seats.length).fill(0);
@@ -348,44 +365,34 @@
             for(let i=0; i<sims; i++) {
                 shuffle(deck);
                 let ptr = 0;
-                
-                // Deal Board
                 let simBoard = [...pk.board];
                 while(simBoard.length < 5) simBoard.push(deck[ptr++]);
 
-                // Deal Players
-                let simHands = [];
-                pk.seats.forEach(s => {
+                let scores = [];
+                pk.seats.forEach((s, idx) => {
+                    if(s.folded) { scores.push(-1); return; }
                     let hand = [...s.cards];
-                    while(hand.length < 2) hand.push(deck[ptr++]);
-                    simHands.push(hand);
+                    // If player has empty hand (random), deal 2
+                    if(hand.length < 2) { 
+                        // Note: In real sim we need unique cards for each random player
+                        // Simplified here: we just take next from deck
+                        hand.push(deck[ptr++]); hand.push(deck[ptr++]);
+                    }
+                    scores.push(evalScore(hand, simBoard));
                 });
-
-                // Eval
-                let scores = simHands.map(h => evalScore(h, simBoard));
-                let maxScore = Math.max(...scores);
                 
-                // Award wins (simple winner takes all, split logic omitted for speed)
-                scores.forEach((sc, idx) => {
-                    if(sc === maxScore) wins[idx]++; 
-                });
+                let max = Math.max(...scores);
+                scores.forEach((sc, idx) => { if(sc === max && sc > 0) wins[idx]++; });
             }
 
-            // Update UI
             pk.seats.forEach((s, i) => {
-                // Normalize for splits in sims
-                // Rough estimate is fine for cheat app
-                s.win = Math.round((wins[i] / sims) * 100); // Note: total might exceed 100 on ties
-                // Actually, let's just do standard % share of pots won
-                // For simplicity in UI:
+                s.win = s.folded ? 0 : Math.round((wins[i]/sims)*100);
             });
-            
-            // Re-render only win % text to avoid flicker? 
-            // Full render is fast enough on modern phones.
             renderSeats();
         }, 20);
     }
 
+    // MATH UTILS
     function buildDeck() {
         let d=[], R="23456789TJQKA", S="hdcs";
         for(let r of R) for(let s of S) d.push({r:r, s:s});
@@ -393,23 +400,44 @@
     }
     function shuffle(a) { for(let i=a.length-1; i>0; i--) { const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } }
     
-    // Condensed Evaluator
     function evalScore(h, b) {
+        if(h.length < 2) return 0; // Don't eval partial hands
         let all=[...h, ...b], rC={}, sC={};
         all.forEach(c=>{rC[c.r]=(rC[c.r]||0)+1; sC[c.s]=(sC[c.s]||0)+1});
         let vals="23456789TJQKA";
         let idxs=all.map(c=>vals.indexOf(c.r)).sort((x,y)=>x-y);
-        let fl=Object.values(sC).some(v=>v>=5), str=false, u=[...new Set(idxs)];
+        
+        let fl=Object.values(sC).some(v=>v>=5);
+        let str=false; 
+        let u=[...new Set(idxs)];
         for(let i=0;i<=u.length-5;i++) if(u[i+4]-u[i]==4) str=true;
+        
         let cts=Object.values(rC).sort((x,y)=>y-x);
         let sc=0, max=cts[0], sec=cts[1]||0;
+        
         if(str&&fl) sc=800; else if(max==4) sc=700; else if(max==3&&sec>=2) sc=600;
         else if(fl) sc=500; else if(str) sc=400; else if(max==3) sc=300;
         else if(max==2&&sec==2) sc=200; else if(max==2) sc=100;
-        return sc + idxs[idxs.length-1];
+        
+        // Tie breaker (High card)
+        let high = idxs.length > 0 ? idxs[idxs.length-1] : 0;
+        return sc + high; 
     }
 
-    // --- BLACKJACK ENGINE (Unchanged) ---
+    function getHandName(sc) {
+        if(sc==0) return "";
+        if(sc>=800) return "Straight Flush";
+        if(sc>=700) return "Four of a Kind";
+        if(sc>=600) return "Full House";
+        if(sc>=500) return "Flush";
+        if(sc>=400) return "Straight";
+        if(sc>=300) return "Three of a Kind";
+        if(sc>=200) return "Two Pair";
+        if(sc>=100) return "Pair";
+        return "High Card";
+    }
+
+    // BLACKJACK (Unchanged)
     let bj = { run:0, dealt:0, decks:6, mode:'count', d:null, p:0 };
     function setBjMode(m) { bj.mode=m; document.querySelectorAll('.bj-tog').forEach(e=>e.classList.remove('selected')); document.getElementById('bm-'+m).classList.add('selected'); }
     function bjIn(v) {
@@ -438,7 +466,7 @@
         }
         document.getElementById('bj-rec').innerText=rec;
     }
-
+    
     // Init
     initPoker();
 </script>
